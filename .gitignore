@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Unit test / coverage reports
+.coverage
+.coverage.*
+.cache
+coverage/
+
+# logs:
+logs/
+
+# Environments
+.env
+venv/
+
+# visual studio
+.vscode
+
+# mac
+.DS_Store
+
+# bazel
+src/bazel-bin
+src/bazel-genfiles
+src/bazel-out
+src/bazel-src
+src/bazel-testlogs
