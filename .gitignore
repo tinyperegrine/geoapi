@@ -15,6 +15,9 @@ logs/
 .env
 venv/
 
+# mypy cache
+.mypy_cache/
+
 # visual studio
 .vscode
 
