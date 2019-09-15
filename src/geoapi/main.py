@@ -1,15 +1,16 @@
+# cd to src and archive
+# git archive -o geapi1.zip --prefix=geoapi/ HEAD
 # cd to src, then:
+# unzip
 # uvicorn geoapi.main:app --reload
 from typing import List
-from typing import Union
-from typing import Optional
 from fastapi import FastAPI
 
 from geoapi.models import DB
-from geoapi.models import CoffeeShopIn
-from geoapi.models import CoffeeShopOut
+from geoapi.models import RealPropertyIn
+from geoapi.models import RealPropertyOut
 
-DATABASE_URL = "postgresql://docker:docker@localhost:25432/gis"
+DATABASE_URL = "postgresql://postgres:engineTest888@localhost:5555/zesty"
 
 db = DB(DATABASE_URL)
 
@@ -31,19 +32,19 @@ async def root():
     return {"message": "Welcome to the GEOAPI. Please go to /docs for help"}
 
 
-@app.get("/coffeeshops/", response_model=List[CoffeeShopOut])
-async def get_all_coffee_shops():
-    out_list = await db.coffee_shop_repository.get_all()
+@app.get("/properties/", response_model=List[RealPropertyOut])
+async def get_all_real_properties():
+    out_list = await db.real_property_repository.get_all()
     return out_list
 
 
-@app.get("/coffeeshops/{shop_id}/", response_model=CoffeeShopOut)
-async def get_coffee_shop(shop_id: int):
-    coffee_shop = await db.coffee_shop_repository.get(shop_id)
-    return coffee_shop
+@app.get("/properties/{property_id}/", response_model=RealPropertyOut)
+async def get_real_property(property_id: str):
+    real_property = await db.real_property_repository.get(property_id)
+    return real_property
 
 
-@app.post("/coffeeshops/", response_model=CoffeeShopOut)
-async def create_coffee_shop(coffeeshop: CoffeeShopIn):
-    new_coffee_shop = await db.coffee_shop_repository.create(coffeeshop)
-    return new_coffee_shop
+@app.post("/properties/", response_model=RealPropertyOut)
+async def create_real_property(real_property: RealPropertyIn):
+    new_real_property = await db.real_property_repository.create(real_property)
+    return new_real_property
