@@ -3,12 +3,19 @@
 # cd to src, then:
 # unzip
 # uvicorn geoapi.main:app --reload
-from typing import List
-from fastapi import FastAPI
 
-from geoapi.models import DB
-from geoapi.models import RealPropertyIn
-from geoapi.models import RealPropertyOut
+# regular use during development:
+# cd to /Users/ugp/Projects/baseapis/geoapi
+# source venv/bin/activate
+# cd to src
+# uvicorn geoapi.main:app --reload
+
+from typing import List
+from fastapi import FastAPI, HTTPException
+
+from geoapi.db import DB
+from asyncpg.exceptions import UniqueViolationError
+from geoapi.json_models import RealPropertyIn, RealPropertyOut
 
 DATABASE_URL = "postgresql://postgres:engineTest888@localhost:5555/zesty"
 
@@ -46,5 +53,18 @@ async def get_real_property(property_id: str):
 
 @app.post("/properties/", response_model=RealPropertyOut)
 async def create_real_property(real_property: RealPropertyIn):
-    new_real_property = await db.real_property_repository.create(real_property)
-    return new_real_property
+    """written as a 'post' with the provided id - should probably be a 'put',
+    with logic to create or update depending on if the id exists.  Depends on 
+    business logic details"""
+    try:
+        new_real_property = await db.real_property_repository.create(
+            real_property)
+        return new_real_property
+    except UniqueViolationError as ue:
+        # replace with custom API exceptions to remove db dependency
+        error_details = ue.as_dict()
+        raise HTTPException(status_code=409,
+                            detail={
+                                'message': error_details['message'],
+                                'detail': error_details['detail']
+                            })
