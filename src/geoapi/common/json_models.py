@@ -1,7 +1,7 @@
 from pydantic import BaseModel, UrlStr
 from typing import Optional, List
-import geoapi.spatial_utils as spatial_utils
 from geojson import Point, Polygon
+import geoapi.common.spatial_utils as spatial_utils
 
 
 class RealPropertyBase(BaseModel):

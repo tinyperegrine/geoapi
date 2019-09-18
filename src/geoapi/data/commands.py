@@ -4,8 +4,8 @@ from asyncpg.exceptions import UniqueViolationError
 from dataclasses import dataclass, field, asdict
 from geoalchemy2.types import WKBElement
 from typing import Optional, List
-import geoapi.spatial_utils as spatial_utils
-from geoapi.json_models import RealPropertyIn, RealPropertyOut
+import geoapi.common.spatial_utils as spatial_utils
+from geoapi.common.json_models import RealPropertyIn
 
 
 @dataclass
@@ -35,31 +35,15 @@ class RealPropertyDB():
                    image_bounds=[])
 
 
-class RealPropertyRepository(object):
-    """Repository for all DB CRUD Operations"""
+class RealPropertyCommands(object):
+    """Repository for all DB Transaction Operations"""
 
     def __init__(self, connection: databases.Database,
                  real_property_table: sqlalchemy.Table):
         self._connection = connection
         self._real_property_table = real_property_table
 
-    async def get_all(self) -> List[RealPropertyOut]:
-        select_query = self._real_property_table.select()
-        db_rows = await self._connection.fetch_all(select_query)
-        out_list = [RealPropertyOut.from_db(db_row) for db_row in db_rows]
-        return out_list
-
-    async def get(self, property_id) -> Optional[RealPropertyOut]:
-        select_query = self._real_property_table.select().where(
-            self._real_property_table.c.id == property_id)
-        db_row = await self._connection.fetch_one(select_query)
-        if db_row:
-            return RealPropertyOut.from_db(db_row)
-        else:
-            return None
-
-    async def create(self, real_property_in: RealPropertyIn
-                    ) -> Optional[RealPropertyOut]:
+    async def create(self, real_property_in: RealPropertyIn) -> bool:
         # real_property_db is the mapping of realpropertyin geojson to the database types
         real_property_db = RealPropertyDB.from_real_property_in(
             real_property_in)
@@ -81,5 +65,4 @@ class RealPropertyRepository(object):
             raise
         else:
             await transaction.commit()
-            new_real_property = await self.get(real_property_db.id)
-            return new_real_property
+            return True

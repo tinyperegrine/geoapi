@@ -1,7 +1,8 @@
 import databases
 import sqlalchemy
 from geoalchemy2.types import Geography
-from geoapi.db_models import RealPropertyRepository
+from geoapi.data.queries import RealPropertyQueries
+from geoapi.data.commands import RealPropertyCommands
 
 
 class DB(object):
@@ -28,7 +29,9 @@ class DB(object):
                               nullable=True),
             sqlalchemy.Column("image_url", sqlalchemy.String, nullable=True),
         )
-        self._real_property_repository = RealPropertyRepository(
+        self._real_property_queries = RealPropertyQueries(
+            self._connection, real_property_table)
+        self._real_property_commands = RealPropertyCommands(
             self._connection, real_property_table)
 
     @property
@@ -36,5 +39,9 @@ class DB(object):
         return self._connection
 
     @property
-    def real_property_repository(self) -> RealPropertyRepository:
-        return self._real_property_repository
+    def real_property_queries(self) -> RealPropertyQueries:
+        return self._real_property_queries
+
+    @property
+    def real_property_commands(self) -> RealPropertyCommands:
+        return self._real_property_commands
