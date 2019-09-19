@@ -5,7 +5,8 @@ from geoapi.common.json_models import RealPropertyIn, RealPropertyOut
 
 
 class RealPropertyQueries(object):
-    """Repository for all DB Query Operations"""
+    """Repository for all DB Query Operations.
+    Different from repository for all transaction operations."""
 
     def __init__(self, connection: databases.Database,
                  real_property_table: sqlalchemy.Table):

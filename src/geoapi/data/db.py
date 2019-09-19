@@ -1,5 +1,6 @@
 import databases
 import sqlalchemy
+from sqlalchemy.dialects import postgresql
 from geoalchemy2.types import Geography
 from geoapi.data.queries import RealPropertyQueries
 from geoapi.data.commands import RealPropertyCommands
@@ -25,7 +26,7 @@ class DB(object):
                               Geography(geometry_type='POLYGON', srid=4326),
                               nullable=True),
             sqlalchemy.Column("image_bounds",
-                              sqlalchemy.ARRAY(sqlalchemy.Numeric),
+                              postgresql.ARRAY(postgresql.DOUBLE_PRECISION),
                               nullable=True),
             sqlalchemy.Column("image_url", sqlalchemy.String, nullable=True),
         )
