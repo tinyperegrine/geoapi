@@ -8,6 +8,8 @@ import geojson
 from geojson import Point
 import shapely
 from shapely import geometry
+import pyproj
+from shapely.ops import transform
 
 
 def to_geo_json(geoalchemy_geometry: WKBElement):
@@ -73,5 +75,36 @@ def to_bbox_array(geo_json) -> Optional[List[decimal.Decimal]]:
             shapely_geo_json_bounds[2], shapely_geo_json_bounds[3]
         ]
         return sqlalchemy_array
+    else:
+        return None
+
+
+def buffer(geo_json, distance: int) -> Optional[WKBElement]:
+    if geo_json is not None and distance:
+        json_geometry = json.dumps(geo_json)
+        geo_json_obj = geojson.loads(json_geometry)
+        shapely_geo_json = geometry.shape(geo_json_obj)
+        print(shapely_geo_json)
+        # project to create buffer
+        project_in = pyproj.Transformer.from_proj(
+            pyproj.Proj(init='epsg:4326'),  # source 
+            pyproj.Proj(init='epsg:3857'))  # destination
+        shapely_geo_json_projected = transform(project_in.transform,
+                                               shapely_geo_json)
+        print(shapely_geo_json_projected)
+        # buffer
+        shapely_geo_json_buffered_projected = shapely_geo_json_projected.buffer(
+            distance)
+        print(shapely_geo_json_buffered_projected)
+        # project back
+        project_out = pyproj.Transformer.from_proj(
+            pyproj.Proj(init='epsg:3857'),  # source 
+            pyproj.Proj(init='epsg:4326'))  # destination
+        shapely_geo_json_buffered = transform(
+            project_out.transform, shapely_geo_json_buffered_projected)
+        print(shapely_geo_json_buffered)
+        geoalchemy_element = geoalchemy2.shape.from_shape(
+            shapely_geo_json_buffered)
+        return geoalchemy_element
     else:
         return None

@@ -1,7 +1,8 @@
 import databases
 import sqlalchemy
 from typing import Optional, List
-from geoapi.common.json_models import RealPropertyIn, RealPropertyOut
+from geoapi.common.json_models import RealPropertyIn, RealPropertyOut, GeometryAndDistanceIn
+import geoapi.common.spatial_utils as spatial_utils
 
 
 class RealPropertyQueries(object):
@@ -27,3 +28,14 @@ class RealPropertyQueries(object):
             return RealPropertyOut.from_db(db_row)
         else:
             return None
+
+    async def find(self, geometry_distance: GeometryAndDistanceIn
+                  ) -> List[RealPropertyOut]:
+        geoalchemy_element_buffered = spatial_utils.buffer(
+            geometry_distance.location_geo, geometry_distance.distance)
+        select_query = self._real_property_table.select().where(
+            self._real_property_table.c.geocode_geo.ST_Intersects(
+                geoalchemy_element_buffered))
+        db_rows = await self._connection.fetch_all(select_query)
+        out_list = [RealPropertyOut.from_db(db_row) for db_row in db_rows]
+        return out_list

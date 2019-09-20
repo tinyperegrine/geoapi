@@ -30,6 +30,7 @@ from geoapi.data.db import DB
 from geoapi.routes import create_routes
 
 
+# pylint: disable=unused-variable
 def create_app():
     database_url = os.environ.get('DATABASE_URL')
     if not database_url:
@@ -72,7 +73,7 @@ def create_app():
 
 # only for development, uncomment line below (since reload from within main is broken due to a bug)
 # then run uvicorn geoapi.main:app --reload
-# app = create_app()
+app = create_app()
 
 if __name__ == "__main__":
     app = create_app()

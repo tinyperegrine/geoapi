@@ -2,10 +2,12 @@ from typing import Optional, List, Dict
 from fastapi import APIRouter, HTTPException
 from asyncpg.exceptions import UniqueViolationError
 
-from geoapi.common.json_models import RealPropertyIn, RealPropertyOut
+from geoapi.data.db import DB
+from geoapi.common.json_models import RealPropertyIn, RealPropertyOut, GeometryAndDistanceIn
 
 
-def create_routes(db):
+# pylint: disable=unused-variable
+def create_routes(db: DB) -> APIRouter:
     router = APIRouter()
 
     @router.get("/properties/", response_model=List[RealPropertyOut])
@@ -81,5 +83,25 @@ def create_routes(db):
             new_real_property = await db.real_property_queries.get(
                 real_property.id)
             return new_real_property
+
+    @router.post("/properties/find/", response_model=List[RealPropertyOut])
+    async def find_real_properties(geometry_distance: GeometryAndDistanceIn
+                                  ) -> List[RealPropertyOut]:
+        """Get property records based on buffer around a geometry
+
+        Todo:
+            Add paging support, add better messaging, status code if no records found
+
+        Args:
+            geometry_distance (GeometryAndDistanceIn): GeometryAndDistanceIn is the Geojson based 
+                Data Transfer Object for incoming geometry and distance data to the API.
+                
+        Returns:
+            List[RealPropertyOut]: List of RealPropertyOut objects, which  
+            are the Geojson based Data Transfer Objects for outgoing data from the API 
+            or None if no records found.
+        """
+        out_list = await db.real_property_queries.find(geometry_distance)
+        return out_list
 
     return router

@@ -1,11 +1,11 @@
-from pydantic import BaseModel, UrlStr
-from typing import Optional, List
-from geojson import Point, Polygon
+from pydantic import BaseModel, UrlStr, Json
+from typing import Optional, List, Dict
+from geojson import Point, LineString, Polygon
 import geoapi.common.spatial_utils as spatial_utils
 
 
 class RealPropertyBase(BaseModel):
-    """Base for all Geojson Data Transfer Objects"""
+    """Base for all property Geojson Data Transfer Objects"""
     id: str  #: property id
     geocode_geo: Optional[
         Point] = None  #: Optional Geojson Point representing property location
@@ -19,12 +19,12 @@ class RealPropertyBase(BaseModel):
 
 
 class RealPropertyIn(RealPropertyBase):
-    """Geojson Data Transfer Object for incoming data to the API"""
+    """Geojson Data Transfer Object for incoming property data to the API"""
     pass
 
 
 class RealPropertyOut(RealPropertyBase):
-    """Geojson Data Transfer Object for outgoing data from the API"""
+    """Geojson Data Transfer Object for outgoing property data from the API"""
 
     @classmethod
     def from_db(cls, db_row):
@@ -40,3 +40,33 @@ class RealPropertyOut(RealPropertyBase):
                    building_geo=building_geo_json,
                    image_bounds=image_bounds_geo_json,
                    image_url=db_row["image_url"])
+
+
+class GeometryAndDistanceIn(BaseModel):
+    """Geojson Data Transfer Object for incoming data for find query.
+    Takes distance in meters and any simple point, line or polygon geometry.
+    Should improve by adding validation for input geometry.
+    """
+    location_geo: Dict = {
+    }  #: Geojson geometry representing simple point, line or polygon
+    distance: int  #: Distance in meters
+
+
+class IdAndDistanceIn(BaseModel):
+    """Json Data Transfer Object for incoming data for statistics query.
+    Takes distance in meters and a property id.
+    Should improve by adding validation for input geometry.
+    """
+    property_id: str  #: property id
+    distance: int  #: Distance in meters
+
+
+class Statistics(BaseModel):
+    """Json Data Transfer Object for outgoing data from statistics query.
+    Takes distance in meters and a property id.
+    Should improve by adding validation for input geometry.
+    """
+    parcel_area: int  #: square meters
+    buildings_area: List[int]  #: square meters
+    buildings_distances: List[int]  #: square meters
+    zone_density: int  #: percentage
