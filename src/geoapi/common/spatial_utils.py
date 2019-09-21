@@ -1,6 +1,6 @@
 import json
 import decimal
-from typing import Optional, List
+from typing import Optional, List, Dict, Tuple
 import sqlalchemy
 import geoalchemy2
 from geoalchemy2.types import WKBElement
@@ -80,31 +80,68 @@ def to_bbox_array(geo_json) -> Optional[List[decimal.Decimal]]:
 
 
 def buffer(geo_json, distance: int) -> Optional[WKBElement]:
+    """assumes source crs is 4326 and projected crs to use is 3857"""
     if geo_json is not None and distance:
         json_geometry = json.dumps(geo_json)
         geo_json_obj = geojson.loads(json_geometry)
         shapely_geo_json = geometry.shape(geo_json_obj)
-        print(shapely_geo_json)
         # project to create buffer
         project_in = pyproj.Transformer.from_proj(
             pyproj.Proj(init='epsg:4326'),  # source 
             pyproj.Proj(init='epsg:3857'))  # destination
         shapely_geo_json_projected = transform(project_in.transform,
                                                shapely_geo_json)
-        print(shapely_geo_json_projected)
         # buffer
         shapely_geo_json_buffered_projected = shapely_geo_json_projected.buffer(
             distance)
-        print(shapely_geo_json_buffered_projected)
         # project back
         project_out = pyproj.Transformer.from_proj(
             pyproj.Proj(init='epsg:3857'),  # source 
             pyproj.Proj(init='epsg:4326'))  # destination
         shapely_geo_json_buffered = transform(
             project_out.transform, shapely_geo_json_buffered_projected)
-        print(shapely_geo_json_buffered)
+        # convert to geoalchemy element
         geoalchemy_element = geoalchemy2.shape.from_shape(
             shapely_geo_json_buffered)
         return geoalchemy_element
+    else:
+        return None
+
+
+def area_distance(geoalchemy_polygon: WKBElement,
+                  geocode_geo_json) -> Optional[Dict[str, int]]:
+    if geoalchemy_polygon is not None and geocode_geo_json is not None:
+        input_polygon_shapely_geometry = geoalchemy2.shape.to_shape(
+            geoalchemy_polygon)
+        # project to get area and distance
+        project_in = pyproj.Transformer.from_proj(
+            pyproj.Proj(init='epsg:4326'),  # source 
+            pyproj.Proj(init='epsg:3857'))  # destination
+        input_polygon_projected = transform(project_in.transform,
+                                            input_polygon_shapely_geometry)
+        geocode_json_geometry = json.dumps(geocode_geo_json)
+        geocode_geo_json_obj = geojson.loads(geocode_json_geometry)
+        geocode_shapely = geometry.shape(geocode_geo_json_obj)
+        geocode_projected = transform(project_in.transform, geocode_shapely)
+        area = round(input_polygon_projected.area)
+        distance = round(
+            geocode_projected.distance(input_polygon_projected.centroid))
+        return {'area': area, 'distance': distance}
+    else:
+        return None
+
+
+def area(geoalchemy_polygon: WKBElement) -> Optional[int]:
+    if geoalchemy_polygon is not None:
+        input_polygon_shapely_geometry = geoalchemy2.shape.to_shape(
+            geoalchemy_polygon)
+        # project to get area
+        project_in = pyproj.Transformer.from_proj(
+            pyproj.Proj(init='epsg:4326'),  # source 
+            pyproj.Proj(init='epsg:3857'))  # destination
+        input_polygon_projected = transform(project_in.transform,
+                                            input_polygon_shapely_geometry)
+        area = round(input_polygon_projected.area)
+        return area
     else:
         return None

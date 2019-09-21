@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from fastapi import APIRouter, HTTPException
 from asyncpg.exceptions import UniqueViolationError
 
@@ -43,6 +43,23 @@ def create_routes(db: DB) -> APIRouter:
         real_property = await db.real_property_queries.get(property_id)
         return real_property
 
+    @router.get("/properties/{property_id}/statistics/",
+                response_model=Dict[str, Any])
+    async def statistics(property_id: str,
+                         distance: int = 10) -> Dict[str, Any]:
+        """Get statistics for data near a property
+        
+        Args:
+            property_id (str): property id,
+            distance (int, optional): Distance (in meters) to buffer the property. Defaults to 10.
+        
+        Returns:
+            Dict[str, Any]: Dict of statistics
+        """
+        out_dict = await db.real_property_queries.statistics(
+            property_id, distance)
+        return out_dict
+
     @router.post("/properties/", response_model=RealPropertyOut)
     async def create_real_property(real_property: RealPropertyIn
                                   ) -> Optional[RealPropertyOut]:
@@ -84,9 +101,9 @@ def create_routes(db: DB) -> APIRouter:
                 real_property.id)
             return new_real_property
 
-    @router.post("/properties/find/", response_model=List[RealPropertyOut])
+    @router.post("/properties/find/", response_model=List[str])
     async def find_real_properties(geometry_distance: GeometryAndDistanceIn
-                                  ) -> List[RealPropertyOut]:
+                                  ) -> List[str]:
         """Get property records based on buffer around a geometry
 
         Todo:
@@ -97,8 +114,7 @@ def create_routes(db: DB) -> APIRouter:
                 Data Transfer Object for incoming geometry and distance data to the API.
                 
         Returns:
-            List[RealPropertyOut]: List of RealPropertyOut objects, which  
-            are the Geojson based Data Transfer Objects for outgoing data from the API 
+            List[str]: List of property ids, 
             or None if no records found.
         """
         out_list = await db.real_property_queries.find(geometry_distance)
