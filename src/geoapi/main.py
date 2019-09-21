@@ -53,7 +53,13 @@ def create_app():
 
     @app.get("/")
     async def root() -> Dict[str, str]:
-        """GeoAPI Home"""
+        """GeoAPI Home
+
+        Returns:
+            {
+                "message": "Welcome to the GEOAPI. Please go to /docs for help"
+            }
+        """
         return {"message": "Welcome to the GEOAPI. Please go to /docs for help"}
 
     router = create_routes(db)
@@ -73,7 +79,7 @@ def create_app():
 
 # only for development, uncomment line below (since reload from within main is broken due to a bug)
 # then run uvicorn geoapi.main:app --reload
-app = create_app()
+# app = create_app()
 
 if __name__ == "__main__":
     app = create_app()

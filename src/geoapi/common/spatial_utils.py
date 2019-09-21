@@ -26,7 +26,7 @@ def to_geo_json(geoalchemy_geometry: WKBElement):
 
 def to_geoalchemy_element(geo_json) -> Optional[WKBElement]:
     """returns a geoalchemy geometry object from geojson object"""
-    if geo_json is not None:
+    if geo_json:
         json_geometry = json.dumps(geo_json)
         geo_json_obj = geojson.loads(json_geometry)
         shapely_geo_json = geometry.shape(geo_json_obj)
@@ -65,7 +65,7 @@ def to_bbox_array(geo_json) -> Optional[List[decimal.Decimal]]:
     """returns a sqlalchemy array object from geojson object.  
     Keeping default number of decimal places to 6 for now, 
     can change depending on data precision requirements."""
-    if geo_json is not None:
+    if geo_json:
         json_geometry = json.dumps(geo_json)
         geo_json_obj = geojson.loads(json_geometry)
         shapely_geo_json = geometry.shape(geo_json_obj)
@@ -81,7 +81,7 @@ def to_bbox_array(geo_json) -> Optional[List[decimal.Decimal]]:
 
 def buffer(geo_json, distance: int) -> Optional[WKBElement]:
     """assumes source crs is 4326 and projected crs to use is 3857"""
-    if geo_json is not None and distance:
+    if geo_json and distance:
         json_geometry = json.dumps(geo_json)
         geo_json_obj = geojson.loads(json_geometry)
         shapely_geo_json = geometry.shape(geo_json_obj)
@@ -109,39 +109,39 @@ def buffer(geo_json, distance: int) -> Optional[WKBElement]:
 
 
 def area_distance(geoalchemy_polygon: WKBElement,
-                  geocode_geo_json) -> Optional[Dict[str, int]]:
-    if geoalchemy_polygon is not None and geocode_geo_json is not None:
-        input_polygon_shapely_geometry = geoalchemy2.shape.to_shape(
-            geoalchemy_polygon)
-        # project to get area and distance
-        project_in = pyproj.Transformer.from_proj(
-            pyproj.Proj(init='epsg:4326'),  # source 
-            pyproj.Proj(init='epsg:3857'))  # destination
-        input_polygon_projected = transform(project_in.transform,
-                                            input_polygon_shapely_geometry)
+                  geocode_geo_json=None) -> Dict[str, int]:
+    """calculates area of polygon wkbelement and
+    optionally distance to a geojson gemetry if it is provided.
+    
+    Args:
+        geoalchemy_polygon (WKBElement): polygon whose area is desired
+        geocode_geo_json (geojson geometry): geometry to calculate distance to
+    
+    Returns:
+        Dict[str, int]: {'area': area in sqm, 'distance': distance in meters}
+        if no input geojson geometry for distance calculation then returns -1 for distance
+    """
+
+    input_polygon_shapely_geometry = geoalchemy2.shape.to_shape(
+        geoalchemy_polygon)
+    # project
+    project_in = pyproj.Transformer.from_proj(
+        pyproj.Proj(init='epsg:4326'),  # source 
+        pyproj.Proj(init='epsg:3857'))  # destination
+
+    # get area
+    input_polygon_projected = transform(project_in.transform,
+                                        input_polygon_shapely_geometry)
+    area = round(input_polygon_projected.area)
+
+    # get distance
+    if geocode_geo_json:
         geocode_json_geometry = json.dumps(geocode_geo_json)
         geocode_geo_json_obj = geojson.loads(geocode_json_geometry)
         geocode_shapely = geometry.shape(geocode_geo_json_obj)
         geocode_projected = transform(project_in.transform, geocode_shapely)
-        area = round(input_polygon_projected.area)
         distance = round(
             geocode_projected.distance(input_polygon_projected.centroid))
         return {'area': area, 'distance': distance}
     else:
-        return None
-
-
-def area(geoalchemy_polygon: WKBElement) -> Optional[int]:
-    if geoalchemy_polygon is not None:
-        input_polygon_shapely_geometry = geoalchemy2.shape.to_shape(
-            geoalchemy_polygon)
-        # project to get area
-        project_in = pyproj.Transformer.from_proj(
-            pyproj.Proj(init='epsg:4326'),  # source 
-            pyproj.Proj(init='epsg:3857'))  # destination
-        input_polygon_projected = transform(project_in.transform,
-                                            input_polygon_shapely_geometry)
-        area = round(input_polygon_projected.area)
-        return area
-    else:
-        return None
+        return {'area': area, 'distance': -1}

@@ -61,12 +61,12 @@ class IdAndDistanceIn(BaseModel):
     distance: int  #: Distance in meters
 
 
-class Statistics(BaseModel):
+class StatisticsOut(BaseModel):
     """Json Data Transfer Object for outgoing data from statistics query.
-    Takes distance in meters and a property id.
-    Should improve by adding validation for input geometry.
     """
     parcel_area: int  #: square meters
-    buildings_area: List[int]  #: square meters
-    buildings_distances: List[int]  #: square meters
-    zone_density: int  #: percentage
+    buildings_area_distance: List[Dict[
+        str,
+        int]]  #: list of building areas (square meters) and distances to zone center (meters)
+    zone_area: int  #: square meters
+    zone_density: float  #: percentage of building area in zone
