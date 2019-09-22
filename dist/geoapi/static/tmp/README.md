@@ -1,0 +1,1 @@
+Folder for temporary downloaded property image files.  

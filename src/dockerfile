@@ -1,0 +1,17 @@
+FROM python:3.7.4
+
+# set working folder
+WORKDIR /usr/src/geoapi
+
+# add gcc for compiling speedups
+RUN apk add --no-cache gcc musl-dev linux-headers
+
+# install app dependencies
+COPY ./requirements.txt ./
+RUN pip install -r requirements.txt
+
+# copy app
+COPY . .
+
+# run app python -m geoapi.main
+CMD [ "python", "-m", "geoapi.main"]

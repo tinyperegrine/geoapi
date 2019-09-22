@@ -34,3 +34,5 @@ src/bazel-testlogs
 # static downloaded image files
 src/geoapi/static/tmp/*.tif
 src/geoapi/static/tmp/*.jpg
+dist/geoapi/static/tmp/*.tif
+dist/geoapi/static/tmp/*.jpg
