@@ -72,6 +72,7 @@ def create_app():
         }},
     )
 
+    # eventually manage with gunicorn, etc.
     app.mount("/static", StaticFiles(directory="geoapi/static"), name="static")
 
     return app
@@ -79,9 +80,13 @@ def create_app():
 
 # only for development, uncomment line below (since reload from within main is broken due to a bug)
 # then run uvicorn geoapi.main:app --reload
-# app = create_app()
+app = create_app()
 
 if __name__ == "__main__":
+    """Temporary Entry Point:
+
+    todo: better handling of env vars, also have command line args, include gunicorn, parallel workers and related configs
+    """
     app = create_app()
     api_host = os.environ.get('API_HOST')
     if not api_host:

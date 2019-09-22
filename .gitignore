@@ -30,3 +30,7 @@ src/bazel-genfiles
 src/bazel-out
 src/bazel-src
 src/bazel-testlogs
+
+# static downloaded image files
+src/geoapi/static/tmp/*.tif
+src/geoapi/static/tmp/*.jpg

@@ -1,6 +1,10 @@
+import os
+from time import time
 import asyncio
+import aiohttp
 import databases
 import sqlalchemy
+from PIL import Image
 from sqlalchemy.sql import select, func
 from typing import Optional, List, Dict, Any
 from geoapi.common.exceptions import ResourceNotFoundError, ResourceMissingDataError
@@ -62,6 +66,7 @@ class RealPropertyQueries(object):
                          distance: int) -> StatisticsOut:
 
         # get property geocode
+        # todo: replace this with a redis geocode cache - maintain db sync with postgres with a queue
         select_query = select([
             self._real_property_table.c.geocode_geo
         ]).where(self._real_property_table.c.id == property_id)
@@ -131,3 +136,64 @@ class RealPropertyQueries(object):
             zone_area=zone_area,
             zone_density=zone_density)
         return statistics_out
+
+    async def get_image(self, property_id) -> str:
+
+        # get property image url
+        # todo: replace this with a redis cache - maintain db sync with postgres with a queue
+        select_query = select([
+            self._real_property_table.c.image_url
+        ]).where(self._real_property_table.c.id == property_id)
+        db_row = await self._connection.fetch_one(select_query)
+        if db_row is None:
+            # TBD log
+            raise ResourceNotFoundError(
+                "Property not found - id: {}".format(property_id))
+        if db_row["image_url"] is None:
+            # TBD log
+            raise ResourceMissingDataError(
+                "Property missing image url - id: {}".format(property_id))
+
+        # get image
+        # with temporary placeholder for progress reporting, add logging etc.
+        # timeouts on url not found, badly formed urls, etc. not handled
+        total_size = 0
+        start = time()
+        print_size = 0.0
+        file_name = os.path.join('geoapi/static/tmp',
+                                 os.path.basename(db_row["image_url"]))
+        timeout = aiohttp.ClientTimeout(
+            total=5 * 60, connect=30)  # could put in config eventually
+        try:
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.get(db_row["image_url"]) as r:
+                    with open(file_name, 'wb') as fd:
+                        print('file download started: {}'.format(
+                            db_row["image_url"]))
+                        while True:
+                            chunk = await r.content.read(16144)
+                            if not chunk:
+                                break
+                            fd.write(chunk)
+                            total_size += len(chunk)
+                            print_size += len(chunk)
+                            if (print_size / (1024 * 1024)
+                               ) > 100:  # print every 100MB download
+                                print(
+                                    f'{time() - start:0.2f}s, downloaded: {total_size / (1024 * 1024):0.0f}MB'
+                                )
+                                print_size = (print_size / (1024 * 1024)) - 100
+                        print('file downloaded: {}'.format(file_name))
+                        print(
+                            f'total time: {time() - start:0.2f}s, total size: {total_size / (1024 * 1024):0.0f}MB'
+                        )
+            # convert to jpeg
+            file_name_jpg = os.path.splitext(file_name)[0] + ".jpg"
+            img = Image.open(file_name)
+            img.save(file_name_jpg, "JPEG", quality=100)
+
+        except aiohttp.client_exceptions.ServerTimeoutError as ste:
+            # log
+            print('Error: {0}'.format(ste))
+            raise
+        return file_name_jpg
