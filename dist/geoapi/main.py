@@ -22,6 +22,7 @@
 
 import os
 import uvicorn
+import asyncio
 from typing import Optional, List, Dict
 from fastapi import FastAPI, HTTPException
 from starlette.staticfiles import StaticFiles
@@ -35,6 +36,7 @@ def create_app():
     database_url = os.environ.get('DATABASE_URL')
     if not database_url:
         database_url = "postgresql://postgres:engineTest888@localhost:5555/zesty"
+        print(database_url)
     db = DB(database_url)
 
     app = FastAPI(
@@ -45,7 +47,23 @@ def create_app():
 
     @app.on_event("startup")
     async def startup():
-        await db.connection.connect()
+        """improve initial connection with health checks and docker based functions"""
+        print('connecting to db')
+        tries = 3
+        for i in range(tries):
+            try:
+                print('trying {}'.format(i + 1))
+                await db.connection.connect()
+            except Exception as ex:
+                # log, wait and retry
+                if i < tries - 1:
+                    await asyncio.sleep(60)
+                    continue
+                else:
+                    print('failed to connect to db')
+                    raise
+            break
+        print('connected to db')
 
     @app.on_event("shutdown")
     async def shutdown():
@@ -90,7 +108,7 @@ if __name__ == "__main__":
     app = create_app()
     api_host = os.environ.get('API_HOST')
     if not api_host:
-        api_host = "127.0.0.1"
+        api_host = "0.0.0.0"
     port = os.environ.get('API_PORT')
     if not port:
         api_port = 8000

@@ -7,9 +7,9 @@ services:
     depends_on:
       - db
     ports:
-      - "8000:8000"
+      - "8001:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:engineTest888@db:5556/zesty
+      - DATABASE_URL=postgresql://postgres:engineTest888@db/zesty
   db:
     image: mdillon/postgis:9.6
     restart: always
