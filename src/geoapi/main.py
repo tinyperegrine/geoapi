@@ -1,25 +1,3 @@
-# cd to src and archive
-# git archive -o geapi1.zip --prefix=geoapi/ HEAD
-# cd to src, then:
-# unzip
-# expose the app variable below globally by uncommenting: app = create_app()
-# (since reload from within main is broken due to a bug)
-# then run:
-# uvicorn geoapi.main:app --reload
-
-# regular use during development:
-# cd to /Users/ugp/Projects/baseapis/geoapi
-# source venv/bin/activate
-# code .
-# cd to src
-# see note above for app variable
-# uvicorn geoapi.main:app --reload
-
-# production deployment:
-# comment out the line: app = create_app()
-# now run:
-# python -m geoapi.main
-
 import os
 import uvicorn
 import asyncio
