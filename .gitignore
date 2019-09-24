@@ -36,3 +36,7 @@ src/geoapi/static/tmp/*.tif
 src/geoapi/static/tmp/*.jpg
 dist/geoapi/static/tmp/*.tif
 dist/geoapi/static/tmp/*.jpg
+
+# general notes for self
+devREADME.md
+
