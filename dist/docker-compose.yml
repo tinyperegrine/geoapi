@@ -6,10 +6,15 @@ services:
     image: tinyperegrine/geoapi:1.0
     depends_on:
       - db
+    # the internal port (:8000) below - must match API_PORT
+    # the DATABASE_URL must match the db service environment vars
     ports:
       - "8001:8000"
     environment:
       - DATABASE_URL=postgresql://postgres:engineTest888@db/zesty
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_LOG_LEVEL=info
   db:
     image: mdillon/postgis:9.6
     restart: always
