@@ -49,33 +49,30 @@ The REST API is accessible at http://localhost:8001 and provides the following e
 ## Restoring from Archive and Reload during Development
 - To Archive: cd to src and archive with:
 
-        ```Shell
-        git archive -o geapi1.zip --prefix=geoapi/ HEAD
-        ```
-To Restore:
-- cd to src, then unzip
-For Reload During Development:
-- expose the `app` variable in `main.py` globally by uncommenting: `app = create_app()` (since reload from within main is broken due to a bug in uvicorn)
-- then run: 
+```Shell
+git archive -o geapi1.zip --prefix=geoapi/ HEAD
+```
+- To Restore: cd to src, then unzip
+- For Reload During Development:
+  - expose the `app` variable in `main.py` globally by uncommenting: `app = create_app()` (since reload from within main is broken due to a bug in uvicorn)
+  - then run: 
         
-        ```Shell
-        uvicorn geoapi.main:app --reload
-        ```
+```Shell
+uvicorn geoapi.main:app --reload
+```
 
 ## Regular Use during Development:
 - cd to `geoapi` (assumes development with a virtual environment called `venv` and assumes use of Visual Studio Code) and run:
         
-        ```Shell
-        source venv/bin/activate
-        code .
-        ```
-
+```Shell
+source venv/bin/activate
+code .
+```
 - cd to `src`, uncomment the line: `app = create_app()` in `main.py`, then run:
         
-        ```Shell
-        uvicorn geoapi.main:app --reload
-        code .
-        ```
+```Shell
+uvicorn geoapi.main:app --reload
+```
 
 ## Docker related Deployment:
 **Production deployment:**
@@ -103,5 +100,6 @@ docker login
 docker tag image_id tinyperegrine/geoapi:1.0
 docker push tinyperegrine/geoapi:1.0
 ```
+
 
 MIT © [tinyperegrine]()
