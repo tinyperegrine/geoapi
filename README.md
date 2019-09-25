@@ -58,22 +58,23 @@ source venv/bin/activate
 pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 ```
-- Insure a database container is setup and available on the localhost.  Look at ./src/docker-compose.yml for setting up a database container for development
-- Create an environment variable called DATABASE_URL with the database connection string
+- while the virtual environment is active, cd to the `./src` folder and run: `./rundev.sh` to get the development api and databases running:
 
 ```Shell
-export DATABASE_URL=postgresql://postgres:engineTest888@localhost:5555/zesty
-```
-- while the virtual environment is active, cd to the ./src folder and run:
-
-```Shell
-uvicorn geoapi.rundev:api --host 0.0.0.0 --port 8000 --reload --log-level debug
+source rundev.sh
 ```
 - Now make changes to the code under the ./src folder
 - Once finished, make sure to update ./requirements.txt, if any new python packages have been installed
 - Run `./build.sh`. This simple script copies all required files to the `./dist` folder, replacing what may have previously existed in the ./dist folder.  ./build.sh may need to be modified if new files are added that are not getting copied to the ./dist folder
 - Commit the code to git
-- Rebuild the docker image and push it to the image repository
+- Rebuild the docker image and push it to the image repository.  cd to the `./dist` folder and:
+
+```Shell
+docker-compose up --build -d
+docker login
+docker tag image_id tinyperegrine/geoapi:1.0
+docker push tinyperegrine/geoapi:1.0
+```
 
 
 MIT © [tinyperegrine]()
