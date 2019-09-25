@@ -2,6 +2,7 @@ import os
 from time import time
 import asyncio
 import aiohttp
+import aiofiles
 import databases
 import sqlalchemy
 from PIL import Image
@@ -167,14 +168,14 @@ class RealPropertyQueries(object):
         try:
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.get(db_row["image_url"]) as r:
-                    with open(file_name, 'wb') as fd:
+                    async with aiofiles.open(file_name, 'wb') as fd:
                         print('file download started: {}'.format(
                             db_row["image_url"]))
                         while True:
                             chunk = await r.content.read(16144)
                             if not chunk:
                                 break
-                            fd.write(chunk)
+                            await fd.write(chunk)
                             total_size += len(chunk)
                             print_size += len(chunk)
                             if (print_size / (1024 * 1024)
