@@ -1,4 +1,5 @@
 import os
+import logging
 from time import time
 import asyncio
 import aiohttp
@@ -21,13 +22,15 @@ class RealPropertyQueries(object):
                  real_property_table: sqlalchemy.Table):
         self._connection = connection
         self._real_property_table = real_property_table
+        self.logger = logging.getLogger(__name__)
 
     async def get_all(self) -> List[RealPropertyOut]:
         select_query = self._real_property_table.select()
         db_rows = await self._connection.fetch_all(select_query)
         if not db_rows:
-            # TBD log
-            raise ResourceNotFoundError("No Properties found")
+            msg = "No Properties found!"
+            self.logger.error(msg)
+            raise ResourceNotFoundError(msg)
         out_list = [RealPropertyOut.from_db(db_row) for db_row in db_rows]
         return out_list
 
@@ -36,9 +39,9 @@ class RealPropertyQueries(object):
             self._real_property_table.c.id == property_id)
         db_row = await self._connection.fetch_one(select_query)
         if not db_row:
-            # TBD log
-            raise ResourceNotFoundError(
-                "Property not found - id: {}".format(property_id))
+            msg = "Property not found - id: {}".format(property_id)
+            self.logger.error(msg)
+            raise ResourceNotFoundError(msg)
         return RealPropertyOut.from_db(db_row)
 
     async def find(self, geometry_distance: GeometryAndDistanceIn) -> List[str]:
@@ -49,8 +52,9 @@ class RealPropertyQueries(object):
                 geoalchemy_element_buffered))
         db_rows = await self._connection.fetch_all(select_query)
         if not db_rows:
-            # TBD log
-            raise ResourceNotFoundError("No Properties found")
+            msg = "No Properties found!"
+            self.logger.error(msg)
+            raise ResourceNotFoundError(msg)
         out_list = [db_row["id"] for db_row in db_rows]
         return out_list
 
@@ -73,14 +77,14 @@ class RealPropertyQueries(object):
         ]).where(self._real_property_table.c.id == property_id)
         db_row = await self._connection.fetch_one(select_query)
         if db_row is None:
-            # TBD log
-            raise ResourceNotFoundError(
-                "Property not found - id: {}".format(property_id))
+            msg = "Property not found - id: {}".format(property_id)
+            self.logger.error(msg)
+            raise ResourceNotFoundError(msg)
         if db_row["geocode_geo"] is None:
-            # TBD log
-            raise ResourceMissingDataError(
-                "Property missing geocode_geo data - id: {}".format(
-                    property_id))
+            msg = "Property missing geocode_geo data - id: {}".format(
+                property_id)
+            self.logger.error(msg)
+            raise ResourceMissingDataError(msg)
         # get zone - buffer around property
         geojson_obj = spatial_utils.to_geo_json(db_row["geocode_geo"])
         geoalchemy_element_buffered = spatial_utils.buffer(
@@ -147,13 +151,13 @@ class RealPropertyQueries(object):
         ]).where(self._real_property_table.c.id == property_id)
         db_row = await self._connection.fetch_one(select_query)
         if db_row is None:
-            # TBD log
-            raise ResourceNotFoundError(
-                "Property not found - id: {}".format(property_id))
+            msg = "Property not found - id: {}".format(property_id)
+            self.logger.error(msg)
+            raise ResourceNotFoundError(msg)
         if db_row["image_url"] is None:
-            # TBD log
-            raise ResourceMissingDataError(
-                "Property missing image url - id: {}".format(property_id))
+            msg = "Property missing image url - id: {}".format(property_id)
+            self.logger.error(msg)
+            raise ResourceMissingDataError(msg)
 
         # get image
         # with temporary placeholder for progress reporting, add logging etc.
@@ -169,7 +173,7 @@ class RealPropertyQueries(object):
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.get(db_row["image_url"]) as r:
                     async with aiofiles.open(file_name, 'wb') as fd:
-                        print('file download started: {}'.format(
+                        self.logger.info('file download started: {}'.format(
                             db_row["image_url"]))
                         while True:
                             chunk = await r.content.read(16144)
@@ -180,12 +184,13 @@ class RealPropertyQueries(object):
                             print_size += len(chunk)
                             if (print_size / (1024 * 1024)
                                ) > 100:  # print every 100MB download
-                                print(
+                                self.logger.info(
                                     f'{time() - start:0.2f}s, downloaded: {total_size / (1024 * 1024):0.0f}MB'
                                 )
                                 print_size = (print_size / (1024 * 1024)) - 100
-                        print('file downloaded: {}'.format(file_name))
-                        print(
+                        self.logger.info(
+                            'file downloaded: {}'.format(file_name))
+                        self.logger.info(
                             f'total time: {time() - start:0.2f}s, total size: {total_size / (1024 * 1024):0.0f}MB'
                         )
             # convert to jpeg
@@ -194,7 +199,6 @@ class RealPropertyQueries(object):
             img.save(file_name_jpg, "JPEG", quality=100)
 
         except aiohttp.client_exceptions.ServerTimeoutError as ste:
-            # log
-            print('Error: {0}'.format(ste))
+            self.logger.error('Time out: {0}'.format(ste))
             raise
         return file_name_jpg

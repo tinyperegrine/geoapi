@@ -1,3 +1,4 @@
+import logging
 import decimal
 import databases
 import sqlalchemy
@@ -46,6 +47,7 @@ class RealPropertyCommands(object):
                  real_property_table: sqlalchemy.Table):
         self._connection = connection
         self._real_property_table = real_property_table
+        self.logger = logging.getLogger(__name__)
 
     async def create(self, real_property_in: RealPropertyIn) -> bool:
         # real_property_db is the mapping of realpropertyin geojson to the database types
@@ -58,14 +60,13 @@ class RealPropertyCommands(object):
         try:
             await self._connection.execute(insert_query)
         except UniqueViolationError as ue:
-            # TBD log
-            print('Error Duplicate id details: {0}'.format(ue.as_dict()))
+            self.logger.error('Duplicate id - details: {0}'.format(
+                ue.as_dict()))
             await transaction.rollback()
             # replace raising this with custom API exceptions to remove db dependency for API
             raise
         except Exception as e:
-            # TBD log
-            print('Error: {0}'.format(e))
+            self.logger.exception('{0}'.format(e))
             await transaction.rollback()
             raise
         else:

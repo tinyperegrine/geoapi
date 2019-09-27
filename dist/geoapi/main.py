@@ -1,5 +1,8 @@
 import os
+import sys
+import logging
 import uvicorn
+from geoapi.log import create_log
 from geoapi.api import create_api
 
 # for production, cd to dist folder and run:
@@ -7,14 +10,18 @@ from geoapi.api import create_api
 
 
 def main():
-    db_url = os.environ.get('DATABASE_URL')
-    if not db_url:
-        # log
-        print('Environmental Variable: DATABASE_URL not set!')
-        return None
-    else:
+    logger = create_log()
+    try:
+        db_url = os.environ['DATABASE_URL']
         api = create_api(database_url=db_url)
-    return api
+        return api
+    except KeyError:
+        logger.error('Environmental Variable: DATABASE_URL not set!')
+        raise
+    except Exception as e:
+        # for all uncaught exceptions
+        logger.exception("Uncaught exception: {0}".format(str(e)))
+        raise
 
 
 if __name__ == "__main__":
@@ -23,6 +30,7 @@ if __name__ == "__main__":
     todo: better handling of env vars, also have command line args, add the build system, include gunicorn, parallel workers and related configs
     """
     api = main()
+    logger = logging.getLogger(__name__)
     if api:
         api_host = os.environ.get('API_HOST')
         if not api_host:
@@ -37,6 +45,6 @@ if __name__ == "__main__":
             api_log_level = 'info'
 
         uvicorn.run(api, host=api_host, port=api_port, log_level=api_log_level)
+        logger.info('API started.')
     else:
-        # log
-        print('API cannot run!')
+        logger.error('API cannot run!')

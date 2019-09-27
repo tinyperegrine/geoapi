@@ -1,3 +1,4 @@
+import logging
 import asyncio
 from typing import Optional, List, Dict
 from fastapi import FastAPI
@@ -22,31 +23,32 @@ def create_api(database_url=None):
     )
 
     # 2. setup db
-    # log db being used
-    print('Database: {}'.format(database_url))
     db = DB(database_url)
 
     # 3. connect/disconnect db on api startup/shutdown events
     @api.on_event("startup")
     async def startup():
         """improve initial connection with health checks and docker based functions"""
+
         # log
-        print('connecting to db')
+        logger = logging.getLogger(__name__)
+        logger.info('Database: {}'.format(database_url))
+        logger.info('connecting to db')
         tries = 3
         for i in range(tries):
             try:
-                print('trying {}'.format(i + 1))
+                logger.info('trying {}'.format(i + 1))
                 await db.connection.connect()
             except Exception as ex:
-                # log, wait and retry
+                # log, wait and retry - retry interval 60
                 if i < tries - 1:
                     await asyncio.sleep(60)
                     continue
                 else:
-                    print('failed to connect to db')
+                    logger.error('failed to connect to db!')
                     raise
             break
-        print('connected to db')
+        logger.info('connected to db')
 
     @api.on_event("shutdown")
     async def shutdown():

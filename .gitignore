@@ -9,7 +9,10 @@ __pycache__/
 coverage/
 
 # logs:
-logs/
+src/geoapi/logs/*.log
+src/geoapi/logs/*.log.*
+dist/geoapi/logs/*.log
+dist/geoapi/logs/*.log.*
 
 # Environments
 .env
