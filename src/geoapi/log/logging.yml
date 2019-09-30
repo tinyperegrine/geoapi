@@ -1,0 +1,79 @@
+version: 1
+disable_existing_loggers: True
+formatters:
+    standard:
+        format: "%(asctime)s.%(msecs)03d %(levelname)s [<PID %(process)d:%(processName)s>:%(thread)d] %(name)s [-] %(message)s"
+        datefmt: "%Y-%m-%d %H:%M:%S"
+    debug:
+        format: "%(asctime)s.%(msecs)03d %(levelname)s [<PID %(process)d:%(processName)s>:%(thread)d] %(name)s [-] %(message)s [-] %(funcName)s %(pathname)s:%(lineno)d"
+        datefmt: "%Y-%m-%d %H:%M:%S"
+    json_standard:
+        format: "%(asctime)%(msecs)03d%(levelname)%(process)%(processName)%(thread)%(name)%(message)"
+        datefmt: "%Y-%m-%d %H:%M:%S"
+        class: "pythonjsonlogger.jsonlogger.JsonFormatter"
+    json_debug:
+        format: "%(asctime)%(msecs)03d%(levelname)%(process)%(processName)%(thread)%(name)%(message)%(funcName)%(pathname)%(lineno)"
+        datefmt: "%Y-%m-%d %H:%M:%S"
+        class: "pythonjsonlogger.jsonlogger.JsonFormatter"
+handlers:
+    console:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: debug
+        stream: ext://sys.stdout
+    info_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: INFO
+        formatter: json_standard
+        filename: geoapi/log/logs/info.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 20
+        encoding: utf8
+    warn_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: WARN
+        formatter: json_standard
+        filename: geoapi/log/logs/warn.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 20
+        encoding: utf8
+    critical_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: CRITICAL
+        formatter: json_standard
+        filename: geoapi/log/logs/critical.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 20
+        encoding: utf8
+    debug_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: DEBUG
+        formatter: json_debug
+        filename: geoapi/log/logs/debug.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 20
+        encoding: utf8
+    error_file_handler:
+        class: logging.handlers.RotatingFileHandler
+        level: ERROR
+        formatter: json_debug
+        filename: geoapi/log/logs/error.log
+        maxBytes: 10485760 # 10MB
+        backupCount: 20
+        encoding: utf8
+    sys_log_handler:
+        class: logging.handlers.SysLogHandler
+        level: ERROR
+        formatter: debug
+        address: /var/run/syslog
+        facility: local1
+
+loggers:
+    uvicorn:
+        level: INFO
+        handlers: [console, info_file_handler, error_file_handler, critical_file_handler, debug_file_handler, warn_file_handler, sys_log_handler]
+        propagate: no
+root:
+    level: INFO
+    handlers: [console, info_file_handler, error_file_handler, critical_file_handler, debug_file_handler, warn_file_handler, sys_log_handler]
+    propogate: yes

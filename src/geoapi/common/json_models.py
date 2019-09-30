@@ -1,7 +1,17 @@
+from enum import Enum, IntEnum
 from pydantic import BaseModel, UrlStr, Json
 from typing import Optional, List, Dict
 from geojson import Point, LineString, Polygon
 import geoapi.common.spatial_utils as spatial_utils
+
+
+class LogEnum(IntEnum):
+    """Class for acceptable log levels for the application"""
+    CRITICAL = 50
+    ERROR = 40
+    WARNING = 30
+    INFO = 20
+    DEBUG = 10
 
 
 class RealPropertyBase(BaseModel):

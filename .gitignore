@@ -9,13 +9,14 @@ __pycache__/
 coverage/
 
 # logs:
-src/geoapi/logs/*.log
-src/geoapi/logs/*.log.*
-dist/geoapi/logs/*.log
-dist/geoapi/logs/*.log.*
+src/geoapi/log/logs/*.log
+src/geoapi/log/logs/*.log.*
+dist/geoapi/log/logs/*.log
+dist/geoapi/log/logs/*.log.*
 
 # Environments
 .env
+.envsrc
 venv/
 
 # mypy cache

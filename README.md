@@ -36,6 +36,7 @@ This will start the following:
 - A REST API that connects to this database.  The REST API is exposed on port 8001 (can be changed in the docker-compose.yml file)
 - The REST API will then be available at http://localhost:8001 
 - The REST API endpoints are documented at http://localhost:8001/docs which shows the Swagger UI and links to the OpenAPI spec for the API
+- The REST API will produce logs in multiple destinations.  For details, review the logging section below (the log level can be changed in the docker-compose.yml file) 
 
 ### Running the API
 The REST API is accessible at http://localhost:8001 and provides the following endpoints (documented with examples at http://localhost:8001/docs):
@@ -46,7 +47,15 @@ The REST API is accessible at http://localhost:8001 and provides the following e
 - http://localhost:8001/properties/find/ - (POST) - post a geojson geometry and a search distance in meters, returns a list of property ids within the search distance to the input geometry
 - http://localhost:8001/properties/ - (POST) - post a json object to insert a new property into the database (with geojson for geography fields), returns the new property as a json object.
 
+
+### API Logging
+The API logs to the following destinations (the log level can be changed in the docker-compose.yml file):
+- stdout and stderr
+- syslog (errors and exceptions only)
+- JSON format rotating file logs in /usr/src/geoapi/geoapi/log/logs folder
+
 ## Development
+### Development Setup:
 The following instructions assume development on Mac or Linux:
 - Install docker, docker-compose, git and Python 3.6+
 - Clone this git repository
@@ -58,16 +67,26 @@ source venv/bin/activate
 pip install --upgrade pip setuptools wheel
 pip install -r requirements.txt
 ```
-- while the virtual environment is active, cd to the `./src` folder and run: `./rundev.sh` to get the development api and databases running:
+
+### On-going Development:
+The following steps are to be used for ongoing development
+- activate the virtual environment 
+- cd to the `./src` folder and run: `./rundev.sh` to get the development api and databases running:
 
 ```Shell
 source rundev.sh
 ```
-- Now make changes to the code under the ./src folder
-- Once finished, make sure to update ./requirements.txt, if any new python packages have been installed
+- rundev.sh calls docker-compose with docker-compose-dev.yml which only sets up the database container.  The REST API application itself is not containerized during development, only the development database is containerized.  In production, both the app and the db are containerized.
+- rundev.sh calls .envsrc.  This file defines the environmental variables needed for running the app in development.  This is not needed in production since docker manages those variables in the container for the app.
+- Finally, rundev.sh calls uvicorn with the REST API in reload mode so that changes during development are immediately reflected in the running app.
+- Now make changes to the code under the ./src folder with your chosen Python IDE.
+
+### Build and Deploy:
+These steps are for final building and deployment:
+- Make sure to update ./requirements.txt, if any new python packages have been installed
 - Run `./build.sh`. This simple script copies all required files to the `./dist` folder, replacing what may have previously existed in the ./dist folder.  ./build.sh may need to be modified if new files are added that are not getting copied to the ./dist folder
 - Commit the code to git
-- Rebuild the docker image and push it to the image repository.  cd to the `./dist` folder and:
+- cd to the `./dist` folder, rebuild the docker image and push it to the docker image repository as follows:
 
 ```Shell
 docker-compose up --build -d

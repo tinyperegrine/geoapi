@@ -41,6 +41,7 @@ pycparser==2.19
 pydantic==0.30
 pylint==2.3.1
 pyproj==2.3.1
+python-json-logger==0.1.11
 python-multipart==0.0.5
 PyYAML==5.1.2
 requests==2.22.0
