@@ -1,7 +1,10 @@
-from geoapi.main import main
-# only for development
-# then run:
-# source rundev.sh
-# (since reload from within main is broken due to a bug in uvicorn)
+"""App Driver for Development
+(since reload from within main is broken due to a bug in uvicorn)
+exposes the api globally, to allow command line running of uvicorn
+called from rundev.sh
+"""
 
-api = main()
+from fastapi import FastAPI
+import geoapi.main
+
+api: FastAPI = geoapi.main.main()

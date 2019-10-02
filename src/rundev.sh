@@ -8,6 +8,7 @@ docker-compose -f docker-compose-dev.yml up -d
 # export API_LOG_LEVEL=debug
 # export API_HOST=0.0.0.0
 # export API_PORT=8000
+# export API_VERSION=1.0.0
 source .envsrc
 
 # uvicorn is called directly in order for reload to work properly during development

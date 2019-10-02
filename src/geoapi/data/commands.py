@@ -1,11 +1,14 @@
+"""Command Object for all commands that modify Real Property table data
+"""
+
 import logging
 import decimal
+from typing import Optional, List
+from dataclasses import dataclass, asdict
 import databases
 import sqlalchemy
-from asyncpg.exceptions import UniqueViolationError
-from dataclasses import dataclass, field, asdict
 from geoalchemy2.types import WKBElement
-from typing import Optional, List
+from asyncpg.exceptions import UniqueViolationError
 import geoapi.common.spatial_utils as spatial_utils
 from geoapi.common.json_models import RealPropertyIn
 
@@ -13,7 +16,9 @@ from geoapi.common.json_models import RealPropertyIn
 @dataclass
 class RealPropertyDB():
     """Geoalchemy based Data Transfer Object for incoming data to the database"""
-    id: str
+
+    # keep id as field name to conform to the db
+    id: str # pylint: disable=invalid-name
     geocode_geo: Optional[WKBElement] = None
     parcel_geo: Optional[WKBElement] = None
     building_geo: Optional[WKBElement] = None
@@ -39,7 +44,9 @@ class RealPropertyDB():
                    image_url=real_property_in.image_url)
 
 
-class RealPropertyCommands(object):
+# pylint: disable=too-few-public-methods
+# (there will be more in the future)
+class RealPropertyCommands():
     """Repository for all DB Transaction Operations
     Different from the repository for all query operations."""
 
@@ -50,7 +57,16 @@ class RealPropertyCommands(object):
         self.logger = logging.getLogger(__name__)
 
     async def create(self, real_property_in: RealPropertyIn) -> bool:
-        # real_property_db is the mapping of realpropertyin geojson to the database types
+        """Insert command for the Real Property Table
+        use real_property_db, which is a mapping of realpropertyin geojson to the database types
+
+        Args:
+            real_property_in (RealPropertyIn): Incoming geojson based object for insertion
+
+        Returns:
+            bool: whether the transaction was successful
+        """
+
         real_property_db = RealPropertyDB.from_real_property_in(
             real_property_in)
         insert_query = self._real_property_table.insert().values(
@@ -59,14 +75,13 @@ class RealPropertyCommands(object):
         transaction = await self._connection.transaction()
         try:
             await self._connection.execute(insert_query)
-        except UniqueViolationError as ue:
-            self.logger.error('Duplicate id - details: {0}'.format(
-                ue.as_dict()))
+        except UniqueViolationError as uve:
+            self.logger.error('Duplicate id - details: %s', uve.as_dict())
             await transaction.rollback()
             # replace raising this with custom API exceptions to remove db dependency for API
             raise
-        except Exception as e:
-            self.logger.exception('{0}'.format(e))
+        except Exception as exc:
+            self.logger.exception(str(exc))
             await transaction.rollback()
             raise
         else:

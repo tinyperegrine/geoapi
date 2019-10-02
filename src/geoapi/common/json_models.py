@@ -1,7 +1,10 @@
-from enum import Enum, IntEnum
-from pydantic import BaseModel, UrlStr, Json
+"""Data Transfer Objects used throughout the Application
+"""
+
+from enum import IntEnum
 from typing import Optional, List, Dict
-from geojson import Point, LineString, Polygon
+from pydantic import BaseModel, UrlStr
+from geojson import Point, Polygon
 import geoapi.common.spatial_utils as spatial_utils
 
 
@@ -30,7 +33,6 @@ class RealPropertyBase(BaseModel):
 
 class RealPropertyIn(RealPropertyBase):
     """Geojson Data Transfer Object for incoming property data to the API"""
-    pass
 
 
 class RealPropertyOut(RealPropertyBase):
@@ -57,8 +59,7 @@ class GeometryAndDistanceIn(BaseModel):
     Takes distance in meters and any simple point, line or polygon geometry.
     Should improve by adding validation for input geometry.
     """
-    location_geo: Dict = {
-    }  #: Geojson geometry representing simple point, line or polygon
+    location_geo: Dict = {}  #: Geojson geometry representing simple point, line or polygon
     distance: int  #: Distance in meters
 
 

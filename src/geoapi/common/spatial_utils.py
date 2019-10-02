@@ -1,14 +1,18 @@
+"""Spatial Processing Functions
+EPSG 4326 and 3857 are harcoded in these functions.
+TODO: Update to detect and use other CRS/SRS as configurable constants
+    as well as inputs to functions
+"""
+
 import json
 import decimal
-from typing import Optional, List, Dict, Tuple
-import sqlalchemy
+from typing import Optional, List, Dict
 import geoalchemy2
 from geoalchemy2.types import WKBElement
 import geojson
-from geojson import Point
+import pyproj
 import shapely
 from shapely import geometry
-import pyproj
 from shapely.ops import transform
 
 
@@ -20,8 +24,8 @@ def to_geo_json(geoalchemy_geometry: WKBElement):
         json_geometry = json.dumps(shapely_geo_json)
         geo_json_obj = geojson.loads(json_geometry)
         return geo_json_obj
-    else:
-        return None
+
+    return None
 
 
 def to_geoalchemy_element(geo_json) -> Optional[WKBElement]:
@@ -32,8 +36,8 @@ def to_geoalchemy_element(geo_json) -> Optional[WKBElement]:
         shapely_geo_json = geometry.shape(geo_json_obj)
         geoalchemy_element = geoalchemy2.shape.from_shape(shapely_geo_json)
         return geoalchemy_element
-    else:
-        return None
+
+    return None
 
 
 def from_lon_lat(lon: float, lat: float) -> Optional[WKBElement]:
@@ -42,13 +46,13 @@ def from_lon_lat(lon: float, lat: float) -> Optional[WKBElement]:
         shapely_point = shapely.geometry.Point(lon, lat)
         geoalchemy_element = geoalchemy2.shape.from_shape(shapely_point)
         return geoalchemy_element
-    else:
-        return None
+
+    return None
 
 
 def from_bbox_array(bbox_array: List[decimal.Decimal]):
-    """returns a geojson geometry object from a bounding box array.  
-    Keeping default number of decimal places to 6 for now, 
+    """returns a geojson geometry object from a bounding box array.
+    Keeping default number of decimal places to 6 for now,
     can change depending on data precision requirements."""
     if bbox_array:
         shapely_geometry = shapely.geometry.box(bbox_array[0], bbox_array[1],
@@ -57,13 +61,13 @@ def from_bbox_array(bbox_array: List[decimal.Decimal]):
         json_geometry = json.dumps(shapely_geo_json)
         geo_json_obj = geojson.loads(json_geometry)
         return geo_json_obj
-    else:
-        return None
+
+    return None
 
 
 def to_bbox_array(geo_json) -> Optional[List[decimal.Decimal]]:
-    """returns a sqlalchemy array object from geojson object.  
-    Keeping default number of decimal places to 6 for now, 
+    """returns a sqlalchemy array object from geojson object.
+    Keeping default number of decimal places to 6 for now,
     can change depending on data precision requirements."""
     if geo_json:
         json_geometry = json.dumps(geo_json)
@@ -75,8 +79,8 @@ def to_bbox_array(geo_json) -> Optional[List[decimal.Decimal]]:
             shapely_geo_json_bounds[2], shapely_geo_json_bounds[3]
         ]
         return sqlalchemy_array
-    else:
-        return None
+
+    return None
 
 
 def buffer(geo_json, distance: int) -> Optional[WKBElement]:
@@ -87,36 +91,36 @@ def buffer(geo_json, distance: int) -> Optional[WKBElement]:
         shapely_geo_json = geometry.shape(geo_json_obj)
         # project to create buffer
         project_in = pyproj.Transformer.from_proj(
-            pyproj.Proj(init='epsg:4326'),  # source 
+            pyproj.Proj(init='epsg:4326'),  # source
             pyproj.Proj(init='epsg:3857'))  # destination
         shapely_geo_json_projected = transform(project_in.transform,
                                                shapely_geo_json)
         # buffer
-        shapely_geo_json_buffered_projected = shapely_geo_json_projected.buffer(
+        shapely_geojson_buffer_project = shapely_geo_json_projected.buffer(
             distance)
         # project back
         project_out = pyproj.Transformer.from_proj(
-            pyproj.Proj(init='epsg:3857'),  # source 
+            pyproj.Proj(init='epsg:3857'),  # source
             pyproj.Proj(init='epsg:4326'))  # destination
         shapely_geo_json_buffered = transform(
-            project_out.transform, shapely_geo_json_buffered_projected)
+            project_out.transform, shapely_geojson_buffer_project)
         # convert to geoalchemy element
         geoalchemy_element = geoalchemy2.shape.from_shape(
             shapely_geo_json_buffered)
         return geoalchemy_element
-    else:
-        return None
+
+    return None
 
 
 def area_distance(geoalchemy_polygon: WKBElement,
                   geocode_geo_json=None) -> Dict[str, int]:
     """calculates area of polygon wkbelement and
     optionally distance to a geojson gemetry if it is provided.
-    
+
     Args:
         geoalchemy_polygon (WKBElement): polygon whose area is desired
         geocode_geo_json (geojson geometry): geometry to calculate distance to
-    
+
     Returns:
         Dict[str, int]: {'area': area in sqm, 'distance': distance in meters}
         if no input geojson geometry for distance calculation then returns -1 for distance
@@ -126,7 +130,7 @@ def area_distance(geoalchemy_polygon: WKBElement,
         geoalchemy_polygon)
     # project
     project_in = pyproj.Transformer.from_proj(
-        pyproj.Proj(init='epsg:4326'),  # source 
+        pyproj.Proj(init='epsg:4326'),  # source
         pyproj.Proj(init='epsg:3857'))  # destination
 
     # get area
@@ -143,5 +147,5 @@ def area_distance(geoalchemy_polygon: WKBElement,
         distance = round(
             geocode_projected.distance(input_polygon_projected.centroid))
         return {'area': area, 'distance': distance}
-    else:
-        return {'area': area, 'distance': -1}
+
+    return {'area': area, 'distance': -1}

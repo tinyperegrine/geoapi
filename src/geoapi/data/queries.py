@@ -1,20 +1,23 @@
+"""Query Object for all read-only queries to the Real Property table
+"""
+
 import os
 import logging
 from time import time
+from typing import List
 import asyncio
 import aiohttp
 import aiofiles
 import databases
-import sqlalchemy
 from PIL import Image
+import sqlalchemy
 from sqlalchemy.sql import select, func
-from typing import Optional, List, Dict, Any
-from geoapi.common.exceptions import ResourceNotFoundError, ResourceMissingDataError
-from geoapi.common.json_models import RealPropertyIn, RealPropertyOut, GeometryAndDistanceIn, StatisticsOut
 import geoapi.common.spatial_utils as spatial_utils
+from geoapi.common.exceptions import ResourceNotFoundError, ResourceMissingDataError
+from geoapi.common.json_models import RealPropertyOut, GeometryAndDistanceIn, StatisticsOut
 
 
-class RealPropertyQueries(object):
+class RealPropertyQueries():
     """Repository for all DB Query Operations.
     Different from repository for all transaction operations."""
 
@@ -25,6 +28,17 @@ class RealPropertyQueries(object):
         self.logger = logging.getLogger(__name__)
 
     async def get_all(self) -> List[RealPropertyOut]:
+        """Gets all the records
+
+        TODO: add paging
+
+        Raises:
+            ResourceNotFoundError: if the table is empty
+
+        Returns:
+            List[RealPropertyOut]: List of outgoing geojson based objects
+        """
+
         select_query = self._real_property_table.select()
         db_rows = await self._connection.fetch_all(select_query)
         if not db_rows:
@@ -34,7 +48,19 @@ class RealPropertyQueries(object):
         out_list = [RealPropertyOut.from_db(db_row) for db_row in db_rows]
         return out_list
 
-    async def get(self, property_id) -> RealPropertyOut:
+    async def get(self, property_id: str) -> RealPropertyOut:
+        """Gets a single record
+
+        Args:
+            property_id (str): property id to search for
+
+        Raises:
+            ResourceNotFoundError: if property id not found
+
+        Returns:
+            RealPropertyOut: Outgoing geojson based object
+        """
+
         select_query = self._real_property_table.select().where(
             self._real_property_table.c.id == property_id)
         db_row = await self._connection.fetch_one(select_query)
@@ -45,6 +71,18 @@ class RealPropertyQueries(object):
         return RealPropertyOut.from_db(db_row)
 
     async def find(self, geometry_distance: GeometryAndDistanceIn) -> List[str]:
+        """Searches for properties within a given distance of a geometry
+
+        Args:
+            geometry_distance (GeometryAndDistanceIn): geojson based geometry and distance in object
+
+        Raises:
+            ResourceNotFoundError: if no properties found
+
+        Returns:
+            List[str]: list of property ids
+        """
+
         geoalchemy_element_buffered = spatial_utils.buffer(
             geometry_distance.location_geo, geometry_distance.distance)
         select_query = select([self._real_property_table.c.id]).where(
@@ -67,11 +105,26 @@ class RealPropertyQueries(object):
         db_rows = await self._connection.fetch_all(select_query_buildings)
         return db_rows
 
-    async def statistics(self, property_id: str,
-                         distance: int) -> StatisticsOut:
+    async def statistics(self, property_id: str, distance: int) -> StatisticsOut:
+        """Gets statistics for data near a property
+
+        TODO: replace the property geocode with a redis geocode cache
+            and maintain db sync with postgres with a redis queue.  Also, refactor
+            to reduce 'too many locals'
+
+        Args:
+            property_id (str): property id
+            distance (int): search radius in meters
+
+        Raises:
+            ResourceNotFoundError: if no property found for the given property id
+            ResourceMissingDataError: if given property does not have geometry info to locate itself
+
+        Returns:
+            StatisticsOut: A summary statistics outgoing object
+        """
 
         # get property geocode
-        # todo: replace this with a redis geocode cache - maintain db sync with postgres with a queue
         select_query = select([
             self._real_property_table.c.geocode_geo
         ]).where(self._real_property_table.c.id == property_id)
@@ -143,9 +196,20 @@ class RealPropertyQueries(object):
         return statistics_out
 
     async def get_image(self, property_id) -> str:
+        """Gets an image based on url from the database
+
+        Args:
+            property_id (str): property id
+
+        Raises:
+            ResourceNotFoundError: if property id not found
+            ResourceMissingDataError: if property does not have a url for image
+
+        Returns:
+            str: image file name/path
+        """
 
         # get property image url
-        # todo: replace this with a redis cache - maintain db sync with postgres with a queue
         select_query = select([
             self._real_property_table.c.image_url
         ]).where(self._real_property_table.c.id == property_id)
@@ -173,8 +237,7 @@ class RealPropertyQueries(object):
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.get(db_row["image_url"]) as r:
                     async with aiofiles.open(file_name, 'wb') as fd:
-                        self.logger.info('file download started: {}'.format(
-                            db_row["image_url"]))
+                        self.logger.info('file download started: %s', db_row["image_url"])
                         while True:
                             chunk = await r.content.read(16144)
                             if not chunk:
@@ -184,21 +247,18 @@ class RealPropertyQueries(object):
                             print_size += len(chunk)
                             if (print_size / (1024 * 1024)
                                ) > 100:  # print every 100MB download
-                                self.logger.info(
-                                    f'{time() - start:0.2f}s, downloaded: {total_size / (1024 * 1024):0.0f}MB'
-                                )
+                                msg = f'{time() - start:0.2f}s, downloaded: {total_size / (1024 * 1024):0.0f}MB'
+                                self.logger.info(msg)
                                 print_size = (print_size / (1024 * 1024)) - 100
-                        self.logger.info(
-                            'file downloaded: {}'.format(file_name))
-                        self.logger.info(
-                            f'total time: {time() - start:0.2f}s, total size: {total_size / (1024 * 1024):0.0f}MB'
-                        )
+                        self.logger.info('file downloaded: %s', file_name)
+                        log_msg = f'total time: {time() - start:0.2f}s, total size: {total_size / (1024 * 1024):0.0f}MB'
+                        self.logger.info(log_msg)
             # convert to jpeg
             file_name_jpg = os.path.splitext(file_name)[0] + ".jpg"
             img = Image.open(file_name)
             img.save(file_name_jpg, "JPEG", quality=100)
 
         except aiohttp.client_exceptions.ServerTimeoutError as ste:
-            self.logger.error('Time out: {0}'.format(ste))
+            self.logger.error('Time out: %s', str(ste))
             raise
         return file_name_jpg
