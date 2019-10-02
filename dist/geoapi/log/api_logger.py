@@ -1,12 +1,16 @@
+"""Logging Module
+
+Returns:
+    logging.Logger: Sets up a yaml based logger (which logs through a queue) or a basic logger
+"""
 import os
-import sys
 import logging
-import asyncio
+import logging.config
 import logging.handlers
+import asyncio
 from queue import SimpleQueue
 from typing import List
 import yaml
-import logging.config
 import geoapi.common.config as config
 from geoapi.common.json_models import LogEnum
 
@@ -17,11 +21,14 @@ class LocalQueueHandler(logging.handlers.QueueHandler):
 
     def emit(self, record: logging.LogRecord) -> None:
         # Removed the call to self.prepare(), handle task cancellation
+        # exceptions in logging sub-system are not raised, just printed out
         try:
             self.enqueue(record)
-        except asyncio.CancelledError:
+        except asyncio.CancelledError as cerr:
+            print(str(cerr))
             raise
-        except Exception:
+        except Exception as exc: # pylint: disable=broad-except
+            print(str(exc))
             self.handleError(record)
 
 
@@ -29,10 +36,12 @@ class LocalQueueHandler(logging.handlers.QueueHandler):
 class APIFormatter(logging.Formatter):
     """Custom Formatter
     Defines the default format for logging messages and appends additional info to debug messages
+    Experimental code.
     """
 
     date_format = "%Y-%m-%d %H:%M:%S"
-    default_format_string = "%(asctime)s.%(msecs)03d [%(process)d:%(thread)d] %(levelname)s %(name)s [-] %(message)s"
+    default_format_string = \
+        "%(asctime)s.%(msecs)03d [%(process)d:%(thread)d] %(levelname)s %(name)s [-] %(message)s"
     debug_format_suffix = "%(funcName)s %(pathname)s:%(lineno)d"
 
     def __init__(self):
@@ -41,12 +50,14 @@ class APIFormatter(logging.Formatter):
                          style='%')
 
     def format(self, record):
-        format_orig = self._style._fmt
+        format_orig = self._style._fmt # pylint: disable=protected-access
         if record.levelno in [logging.DEBUG, logging.ERROR, logging.CRITICAL]:
-            self._style._fmt = APIFormatter.default_format_string + " " + APIFormatter.debug_format_suffix
+            # pylint: disable=protected-access
+            self._style._fmt = APIFormatter.default_format_string + " " + \
+                APIFormatter.debug_format_suffix
 
         result = logging.Formatter.format(self, record)
-        self._style._fmt = format_orig
+        self._style._fmt = format_orig # pylint: disable=protected-access
         return result
 
 
@@ -65,28 +76,28 @@ def _setup_logging_queue() -> None:
 
     handler = LocalQueueHandler(queue)
     root.addHandler(handler)
-    for h in root.handlers[:]:
-        if h is not handler:
-            root.removeHandler(h)
-            handlers.append(h)
+    for configured_handler in root.handlers[:]:
+        if configured_handler is not handler:
+            root.removeHandler(configured_handler)
+            handlers.append(configured_handler)
 
-    listener = logging.handlers.QueueListener(queue,
-                                              *handlers,
-                                              respect_handler_level=True)
+    listener = logging.handlers.QueueListener(queue, *handlers, respect_handler_level=True)
     listener.start()
 
 
 def create_logger(level: LogEnum, use_yml: bool = True) -> logging.Logger:
     """Creates the Python Logger - either a basic logger or a logger configured from yaml
-    
+
     Args:
         level (LogEnum, required): log level enum - one of the five possible log levels
         use_yml (bool, optional): configure based on yaml. Defaults to True.
 
     Constants:
-        DEFAULT_LOG_CONFIG_YML_FILEPATH: Path to the built-in yaml file, defaults to 'geoapi/log/logging.yml'
-        CONFIG_YML_ENV_KEY = Env variable for path to custom yaml file, defaults to 'LOG_YML' and by default is empty so built-in yaml is used
-    
+        DEFAULT_LOG_CONFIG_YML_FILEPATH: Path to the built-in yaml file,
+            defaults to 'geoapi/log/logging.yml'
+        CONFIG_YML_ENV_KEY = Env variable for path to custom yaml file,
+            defaults to 'LOG_YML' and by default is empty so built-in yaml is used
+
     Returns:
         logging.Logger: A fully configured logger
     """
@@ -97,27 +108,29 @@ def create_logger(level: LogEnum, use_yml: bool = True) -> logging.Logger:
     if use_yml:
         # First setup default yaml logging config - in case custom yaml is specified but fails
         default_path = config.DEFAULT_LOG_CONFIG_YML_FILEPATH
-        with open(default_path) as f:
-            logging_config = yaml.safe_load(f.read())
+        with open(default_path) as yml_file:
+            logging_config = yaml.safe_load(yml_file.read())
             logging.config.dictConfig(logging_config)
 
         # get the custom yaml config file path if specified by env
         # (e.g. in case production logging is different from dev logging)
+        # catch logging subsystem exceptions and do not propogate these.
         env_path = os.environ.get(config.CONFIG_YML_ENV_KEY)
         if env_path:
             try:
-                with open(env_path) as f:
-                    logging_config = yaml.safe_load(f.read())
+                with open(env_path) as yml_file:
+                    logging_config = yaml.safe_load(yml_file.read())
                     logging.config.dictConfig(logging_config)
-            except Exception as e:
-                msg = 'Error loading custom yaml config for logging, default yaml config loaded instead.  custom yaml: {}, error: {}'.format(
-                    env_path, str(e))
-                logging.exception(msg)
+            # pylint: disable=broad-except
+            except Exception as exc:
+                logging.exception('Error loading custom yaml config for logging, \
+                    default yaml config loaded instead. \
+                        custom yaml: %s, error: %s', env_path, str(exc))
 
         logger = logging.getLogger()
         logger.setLevel(level)
 
     # finally setup queue based logging
     _setup_logging_queue()
-    logger.info('Using Log Level: {}'.format(logging.getLevelName(level)))
+    logger.info('Using Log Level: %s', logging.getLevelName(level))
     return logger
