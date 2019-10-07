@@ -6,16 +6,19 @@ services:
     image: tinyperegrine/geoapi:1.0
     depends_on:
       - db
-    # the internal port (:8000) below - must match API_PORT
-    # the DATABASE_URL must match the db service environment vars
+    # the internal port (:8000) below - must match GEOAPI_PORT
+    # the GEOAPI_DATABASE_URL must match the db service environment vars
     ports:
       - "8001:8000"
     environment:
-      - DATABASE_URL=postgresql://postgres:engineTest888@db/zesty
-      - API_HOST=0.0.0.0
-      - API_PORT=8000
-      - API_LOG_LEVEL=info
-      - API_VERSION=1.0.0
+      - GEOAPI_DATABASE_URL=postgresql://postgres:engineTest888@db/zesty
+      - GEOAPI_HOST=0.0.0.0
+      - GEOAPI_PORT=8000
+      - GEOAPI_LOG_LEVEL=info
+      - GEOAPI_VERSION=1.0.0
+      - GEOAPI_FUNCTION_TIMING=1
+      - GEOAPI_CONFIG_INI=geoapi/config/config.ini
+      - GEOAPI_LOG_CONFIG_YML=geoapi/log/logging.yml
   db:
     image: mdillon/postgis:9.6
     restart: always

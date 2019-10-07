@@ -12,22 +12,18 @@ import asyncio
 from typing import Optional, Dict
 from fastapi import FastAPI
 from starlette.staticfiles import StaticFiles
-import geoapi.common.config as config
 from geoapi.data.db import DB
 from geoapi.routes import create_routes
 
 
 # pylint: disable=unused-variable
-def create_api(database_url: Optional[str] = None,
-               api_version: str = config.DEFAULT_API_VERSION
-              ) -> Optional[FastAPI]:
+def create_api(database_url: str,
+               api_version: str) -> Optional[FastAPI]:
     """API constructor function
 
     Args:
-        database_url (str, optional): db connection url to a postgis enabled postgres db.
-            Defaults to None.
-        api_version (str, optional): api version for display and routing prefix.
-            Defaults to config DEFAULT_API_VERSION e.g. 1.0.0
+        database_url (str): db connection url to a postgis enabled postgres db.
+        api_version (str): api version for display and routing prefix, uses 1.0.0 format
 
     Raises:
         exc: On database connection errors
@@ -38,6 +34,9 @@ def create_api(database_url: Optional[str] = None,
 
     # database_url = "postgresql://postgres:engineTest888@localhost:5555/zesty"
     if not database_url:
+        return None
+
+    if not api_version:
         return None
 
     # 1. setup api

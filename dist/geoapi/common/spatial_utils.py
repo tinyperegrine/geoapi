@@ -6,6 +6,7 @@ TODO: Update to detect and use other CRS/SRS as configurable constants
 
 import json
 import decimal
+# from functools import lru_cache
 from typing import Optional, List, Dict
 import geoalchemy2
 from geoalchemy2.types import WKBElement
@@ -14,6 +15,7 @@ import pyproj
 import shapely
 from shapely import geometry
 from shapely.ops import transform
+import geoapi.common.decorators as decorators
 
 
 def to_geo_json(geoalchemy_geometry: WKBElement):
@@ -83,8 +85,11 @@ def to_bbox_array(geo_json) -> Optional[List[decimal.Decimal]]:
     return None
 
 
+@decorators.logprofile
+@decorators.logtime(5)
 def buffer(geo_json, distance: int) -> Optional[WKBElement]:
     """assumes source crs is 4326 and projected crs to use is 3857"""
+
     if geo_json and distance:
         json_geometry = json.dumps(geo_json)
         geo_json_obj = geojson.loads(json_geometry)

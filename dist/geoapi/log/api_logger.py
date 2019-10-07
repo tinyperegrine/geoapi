@@ -3,15 +3,16 @@
 Returns:
     logging.Logger: Sets up a yaml based logger (which logs through a queue) or a basic logger
 """
-import os
+
 import logging
 import logging.config
 import logging.handlers
 import asyncio
+from pathlib import Path
 from queue import SimpleQueue
 from typing import List
 import yaml
-import geoapi.common.config as config
+import geoapi.config.api_configurator as config
 from geoapi.common.json_models import LogEnum
 
 
@@ -36,7 +37,7 @@ class LocalQueueHandler(logging.handlers.QueueHandler):
 class APIFormatter(logging.Formatter):
     """Custom Formatter
     Defines the default format for logging messages and appends additional info to debug messages
-    Experimental code.
+    Experimental code - not used.
     """
 
     date_format = "%Y-%m-%d %H:%M:%S"
@@ -85,7 +86,7 @@ def _setup_logging_queue() -> None:
     listener.start()
 
 
-def create_logger(level: LogEnum, use_yml: bool = True) -> logging.Logger:
+def init(level: LogEnum, use_yml: bool = True) -> logging.Logger:
     """Creates the Python Logger - either a basic logger or a logger configured from yaml
 
     Args:
@@ -93,10 +94,10 @@ def create_logger(level: LogEnum, use_yml: bool = True) -> logging.Logger:
         use_yml (bool, optional): configure based on yaml. Defaults to True.
 
     Constants:
-        DEFAULT_LOG_CONFIG_YML_FILEPATH: Path to the built-in yaml file,
+        embedded_log_config_yml_filepath: Path to the embedded yaml file,
             defaults to 'geoapi/log/logging.yml'
-        CONFIG_YML_ENV_KEY = Env variable for path to custom yaml file,
-            defaults to 'LOG_YML' and by default is empty so built-in yaml is used
+        GEOAPI_LOG_CONFIG_YML = Env variable for path to custom yaml file,
+            and by default is empty so built-in yaml is used
 
     Returns:
         logging.Logger: A fully configured logger
@@ -107,15 +108,15 @@ def create_logger(level: LogEnum, use_yml: bool = True) -> logging.Logger:
 
     if use_yml:
         # First setup default yaml logging config - in case custom yaml is specified but fails
-        default_path = config.DEFAULT_LOG_CONFIG_YML_FILEPATH
-        with open(default_path) as yml_file:
+        embedded_log_config_yml_filepath: Path = Path('geoapi/log/logging.yml')
+        with open(embedded_log_config_yml_filepath) as yml_file:
             logging_config = yaml.safe_load(yml_file.read())
             logging.config.dictConfig(logging_config)
 
         # get the custom yaml config file path if specified by env
         # (e.g. in case production logging is different from dev logging)
-        # catch logging subsystem exceptions and do not propogate these.
-        env_path = os.environ.get(config.CONFIG_YML_ENV_KEY)
+        # also, catch logging subsystem exceptions and do not propogate these.
+        env_path = config.API_CONFIG['GEOAPI_LOG_CONFIG_YML']
         if env_path:
             try:
                 with open(env_path) as yml_file:

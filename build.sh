@@ -11,6 +11,7 @@ cp -pRv src/geoapi dist/geoapi
 
 rm -rf dist/geoapi/rundev.py
 rm -rf dist/geoapi/log/logs/*.log
+rm -rf dist/geoapi/log/logs/*.prof
 rm -rf dist/geoapi/static/tmp/*.jpg
 rm -rf dist/geoapi/static/tmp/*.tif
 

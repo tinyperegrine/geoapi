@@ -13,6 +13,8 @@ src/geoapi/log/logs/*.log
 src/geoapi/log/logs/*.log.*
 dist/geoapi/log/logs/*.log
 dist/geoapi/log/logs/*.log.*
+src/geoapi/log/logs/*.prof
+dist/geoapi/log/logs/*.prof
 
 # Environments
 .env
