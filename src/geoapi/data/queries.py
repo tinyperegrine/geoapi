@@ -13,6 +13,7 @@ from PIL import Image
 import sqlalchemy
 from sqlalchemy.sql import select, func
 import geoapi.common.spatial_utils as spatial_utils
+import geoapi.common.decorators as decorators
 from geoapi.common.exceptions import ResourceNotFoundError, ResourceMissingDataError
 from geoapi.common.json_models import RealPropertyOut, GeometryAndDistanceIn, StatisticsOut
 
@@ -195,6 +196,7 @@ class RealPropertyQueries():
             zone_density=zone_density)
         return statistics_out
 
+    @decorators.logtime_async(1)
     async def get_image(self, property_id) -> str:
         """Gets an image based on url from the database
 

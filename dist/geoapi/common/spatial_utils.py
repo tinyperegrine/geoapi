@@ -6,7 +6,7 @@ TODO: Update to detect and use other CRS/SRS as configurable constants
 
 import json
 import decimal
-# from functools import lru_cache
+from functools import lru_cache
 from typing import Optional, List, Dict
 import geoalchemy2
 from geoalchemy2.types import WKBElement
@@ -85,33 +85,44 @@ def to_bbox_array(geo_json) -> Optional[List[decimal.Decimal]]:
     return None
 
 
-@decorators.logprofile
-@decorators.logtime(5)
+# @decorators.logprofile
+# @decorators.logtime(5)
+# @lru_cache(maxsize=128, typed=False)
+def _buffer(json_geometry: str, distance: int) -> WKBElement:
+    """assumes source crs is 4326 and projected crs to use is 3857"""
+
+    geo_json_obj = geojson.loads(json_geometry)
+    shapely_geo_json = geometry.shape(geo_json_obj)
+    # project to create buffer
+    project_in = pyproj.Transformer.from_proj(
+        pyproj.Proj(init='epsg:4326'),  # source
+        pyproj.Proj(init='epsg:3857'))  # destination
+    shapely_geo_json_projected = transform(project_in.transform,
+                                           shapely_geo_json)
+    # buffer
+    shapely_geojson_buffer_project = shapely_geo_json_projected.buffer(
+        distance)
+    # project back
+    project_out = pyproj.Transformer.from_proj(
+        pyproj.Proj(init='epsg:3857'),  # source
+        pyproj.Proj(init='epsg:4326'))  # destination
+    shapely_geo_json_buffered = transform(
+        project_out.transform, shapely_geojson_buffer_project)
+    # convert to geoalchemy element
+    geoalchemy_element = geoalchemy2.shape.from_shape(
+        shapely_geo_json_buffered)
+    return geoalchemy_element
+
+
+
 def buffer(geo_json, distance: int) -> Optional[WKBElement]:
     """assumes source crs is 4326 and projected crs to use is 3857"""
 
     if geo_json and distance:
         json_geometry = json.dumps(geo_json)
-        geo_json_obj = geojson.loads(json_geometry)
-        shapely_geo_json = geometry.shape(geo_json_obj)
-        # project to create buffer
-        project_in = pyproj.Transformer.from_proj(
-            pyproj.Proj(init='epsg:4326'),  # source
-            pyproj.Proj(init='epsg:3857'))  # destination
-        shapely_geo_json_projected = transform(project_in.transform,
-                                               shapely_geo_json)
-        # buffer
-        shapely_geojson_buffer_project = shapely_geo_json_projected.buffer(
-            distance)
-        # project back
-        project_out = pyproj.Transformer.from_proj(
-            pyproj.Proj(init='epsg:3857'),  # source
-            pyproj.Proj(init='epsg:4326'))  # destination
-        shapely_geo_json_buffered = transform(
-            project_out.transform, shapely_geojson_buffer_project)
-        # convert to geoalchemy element
-        geoalchemy_element = geoalchemy2.shape.from_shape(
-            shapely_geo_json_buffered)
+        # _buffer exists since it can be cached
+        # alternative to string conversion are custom geojson hashable geometry classes
+        geoalchemy_element = _buffer(json_geometry, distance)
         return geoalchemy_element
 
     return None
