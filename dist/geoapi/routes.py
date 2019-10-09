@@ -236,7 +236,7 @@ def create_routes(api_db: DB) -> APIRouter:
                         [-73.748332,40.918232],[-73.748332,40.918865],
                         [-73.74917,40.918865],[-73.74917,40.918232],[-73.748332,40.918232]]]
                     },
-                    "image_url": "https://www.google.com"
+                    "image_url": "https://docs.mapbox.com/help/data/landsat.tif"
                 }
 
         Raises:

@@ -64,14 +64,14 @@ def create_api(database_url: str,
                 logger.info('trying %d', i + 1)
                 await db_api.connection.connect()
             except Exception as exc:  # pylint: disable=broad-except
-                # log, wait and retry - retry interval 60
+                # log, wait and retry - retry interval 30
                 # broad exception is acceptable here since it is logged and
                 # eventually raised if persistent
                 if i < tries - 1:
                     logger.error(
                         'failed to connect to db, trying again. Error: %s',
                         str(exc))
-                    await asyncio.sleep(60)
+                    await asyncio.sleep(30)
                     continue
                 else:
                     logger.error('failed to connect to db, exiting!')

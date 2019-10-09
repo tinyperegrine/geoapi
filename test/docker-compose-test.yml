@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  testdb:
+    image: mdillon/postgis:9.6
+    restart: always
+    ports:
+      - "5558:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: engineTest888
+      POSTGRES_DB: zesty
+    volumes:
+      - ./init-db/:/docker-entrypoint-initdb.d/
+      - pg-data:/var/lib/postgresql/data
+volumes:
+  pg-data:

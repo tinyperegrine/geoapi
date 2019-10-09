@@ -47,7 +47,6 @@ The REST API is accessible at http://localhost:8001 and provides the following e
 - http://localhost:8001/properties/find/ - (POST) - post a geojson geometry and a search distance in meters, returns a list of property ids within the search distance to the input geometry
 - http://localhost:8001/properties/ - (POST) - post a json object to insert a new property into the database (with geojson for geography fields), returns the new property as a json object.
 
-
 ### API Logging
 The API logs to the following destinations (the log level can be changed in the docker-compose.yml file):
 - stdout and stderr
@@ -69,7 +68,7 @@ pip install -r requirements.txt
 ```
 
 ### On-going Development:
-The following steps are to be used for ongoing development
+The following steps are to be used for ongoing development:
 - activate the virtual environment 
 - cd to the `./src` folder and run: `./rundev.sh` to get the development api and databases running:
 
@@ -77,9 +76,29 @@ The following steps are to be used for ongoing development
 source rundev.sh
 ```
 - rundev.sh calls docker-compose with docker-compose-dev.yml which only sets up the database container.  The REST API application itself is not containerized during development, only the development database is containerized.  In production, both the app and the db are containerized.
-- rundev.sh calls .envsrc.  This file defines the environmental variables needed for running the app in development.  This is not needed in production since docker manages those variables in the container for the app.
+- rundev.sh calls .envdev.  This file defines the environmental variables needed for running the app in development.  This is not needed in production since docker manages those variables in the container for the app.
 - Finally, rundev.sh calls uvicorn with the REST API in reload mode so that changes during development are immediately reflected in the running app.
 - Now make changes to the code under the ./src folder with your chosen Python IDE.
+
+### Testing:
+The following steps are to be used for testing:
+- activate the virtual environment 
+- cd to the `./test` folder and run: `./runtest.sh` to get the development api and test databases running:
+
+```Shell
+source runtest.sh
+```
+- runtest.sh calls docker-compose with docker-compose-test.yml which only sets up the database container.  The REST API application itself is not containerized during testing, only the test database is containerized.
+- runtest.sh calls .envtest.  This file defines the environmental variables needed for running the app in testing.
+- runtest.sh calls unittest and runs it against the `./src/geoapi` package and reports results
+- Finally, the test database container is shutdown and the volume removed.  Thus, the test database always runs with the originally loaded data
+
+### Performance Monitoring:
+The following steps are to be used for performance monitoring:
+- Turn on performance monitoring by modifing the configuration.  Edit `./src/.envdev` and set 
+GEOAPI_FUNCTION_TIMING to 1 
+- Any function that requires monitoring can be decorated with one of three monitoring decorators.  These can be found in `./src/geoapi/common/decorators.py`
+- Timing and profiling statistics can be obtained by decorating a function with the appropriate decorator.  Documentation is in the decorators module.
 
 ### Build and Deploy:
 These steps are for final building and deployment:

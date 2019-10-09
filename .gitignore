@@ -18,7 +18,8 @@ dist/geoapi/log/logs/*.prof
 
 # Environments
 .env
-.envsrc
+.envdev
+.envtest
 venv/
 
 # mypy cache
