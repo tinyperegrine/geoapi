@@ -54,7 +54,7 @@ typed-ast==1.4.0
 typing-extensions==3.7.4
 ujson==1.35
 urllib3==1.25.3
-uvicorn==0.8.6
+uvicorn==0.11.7
 uvloop==0.12.2
 websockets==7.0
 wrapt==1.11.2
