@@ -14,7 +14,7 @@ Click==7.0
 databases==0.2.5
 dnspython==1.16.0
 email-validator==1.0.4
-fastapi==0.35.0
+fastapi==0.65.2
 GeoAlchemy2==0.6.3
 geojson==2.5.0
 graphene==2.1.8
