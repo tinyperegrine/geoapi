@@ -36,7 +36,7 @@ numpy==1.17.1
 Pillow==6.1.0
 promise==2.2.1
 psycopg2-binary==2.8.3
-pycares==3.0.0
+pycares==4.2.0
 pycparser==2.19
 pydantic==0.30
 pylint==2.3.1
